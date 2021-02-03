@@ -4,9 +4,17 @@
 
 - Sean Rennie
 
+## Title
+
+- Migrating react-leaflet from v2 to v3
+
+## Blurb
+
+- Paul LeCam's `react-leaflet` library is a powerful set of react bindings for `leaflet`. Recently the library has been overhauled to modern react, making use of hooks and doing away completely with classes. It's also been re-written in typescript 🎉! In my view this work brings `react-leaflet` closer to a direct binding for leaflet rather than a "react flavoured leaflet". The introduction of a core library makes building custom components really easy giving react developers the full power of leaflet and its plugin ecosystem. Hats off to you Paul, thanks for the amazing work. Below is my attempt at outlining the changes our app needed in order to migrate to v3.
+
 ## Ideas
 
-- Inital Assumptions
+- Initial Assumptions
   - Using typescript
   - already using `useLeaflet` instead of  `withLeaflet`
 - Summary of changes
@@ -25,7 +33,7 @@
   - Prepare the code base
     - Review all custom components, simplify what you can.
     - Make sure you are using leaflet effectively (GeoJson as geoJson etc, renderer)
-  - Upgrade the dependancies
+  - Upgrade the dependencies
     - If typescript: remove `@types/react-leaflet`
   - Change `Map` to `MapContainer` updating props as required. This is a major break with a number of key differences
     - no `onViewPortChange`
