@@ -38,6 +38,7 @@
   - Change `Map` to `MapContainer` updating props as required. This is a major break with a number of key differences
     - no `onViewPortChange`
     - *Look through the changes and add some more here*
+    - No longer "controlled" props are immutable
   - update `useLeaflet` to `useMap`
   - GeoJSON with `pathOptions` & `eventHandler` instead of direct props. i.e: `renderer` `onClick`
   - Refactor Custom components with `@react-leaflet/core`
