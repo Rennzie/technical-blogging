@@ -1,5 +1,13 @@
 # Writing Plan
 
+## Title
+
+- The case fo COGs in web applications
+
+## Blurb
+
+How to leverage Cloud Optimised GeoTIFFs for displaying high resolution drone imagery on a web application while saving storage costs.
+
 ## Authors
 
 - Alasdair Hitchins
@@ -13,13 +21,15 @@
 - COG vs Map Tiles
 - Low level explanation of what COGs are and what their benefits are
 
+## Intro
+
 ## TOC
 
-### What is a Cloud Optimsed GeoTIFF (COG)
+### What is a Cloud Optimsed GeoTIFF (COG) - (AH)
 
 ...
 
-### Benefits of COGs - What makes them different?
+### Benefits of COGs - What makes them different and who should use them? (SR & AH)
 
 ...
 
@@ -35,14 +45,18 @@
 
 ...
 
-### 4. Consuming COGs in a React application
+### 4. Consuming COGs in a React application (SR)
 
 ...
 
-### 5. Performance
+### 5. Performance/ Why choose COGs (SR)
 
+- How do we measure performance of COG vs raster tiles?
+- Argument can be made for less storage space using COG's and less redundancy because you only need the cog, not the tiff and tiles.
 ...
 
+<!-- Might be worth including a Glossary for all the acronyms -->
+### Glossary
 
 ## Open Questions
 
