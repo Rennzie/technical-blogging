@@ -129,7 +129,7 @@ const hasDataForAllBands = (values) =>
   values.every((value) => value != false || isNaN(value));
 ```
 
-Firstly we check if the pixel should be coloured. Again, what needs to be checked in `hasDataForAllBands` will depend on the dataset but the general idea is to make pixels with no data values transparent. Our go to library for calculating colours from values is `chroma-js`, for a RGB colour all it needs is the three band values.
+Firstly we check if the pixel should be coloured. Again, what needs to be checked in `hasDataForAllBands` will depend on the dataset but the general idea is to make pixels with no data values transparent. Our go to library for calculating colours from values is `chroma-js`. For an RGB colour all it needs is the three band values.
 
 A more complex example like the one below calculates NDVI on the fly from a stacked multispectral COG. The layers could just have easily come from multiple COGs too.
 
