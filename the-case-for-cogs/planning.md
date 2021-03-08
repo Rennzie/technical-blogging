@@ -21,7 +21,7 @@ How to leverage Cloud Optimised GeoTIFFs for displaying high resolution drone im
 - COG vs Map Tiles
 - Low level explanation of what COGs are and what their benefits are
 
-## Intro
+## Intro (SR)
 
 ## TOC
 
@@ -41,6 +41,7 @@ How to leverage Cloud Optimised GeoTIFFs for displaying high resolution drone im
 
 ...
 
+<!-- Not sure we need section 3 unless there is something specific we need to configure in GCP? "Benefitting from their structure" would likely be covered in "Benefits of COGs" above! -->
 ### 3. Hosting COGs on the cloud & benefitting from their structure
 
 ...
