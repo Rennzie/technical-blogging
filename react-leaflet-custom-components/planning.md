@@ -7,11 +7,20 @@
 ## Title
 
 - Building custom Leaflet components with react-leaflet
+- Using Leaflet VectorGrid to render vector tiles in a React app
 
 ## Blurb
 
-- Customizing VectorGrid as a React component to display server hosted vector tiles.
-- A detailed look at turning Leaflet plugin into a React component.
+- Customizing Leaflet VectorGrid as a React component to display server hosted vector tiles.
+- A detailed look at turning Leaflet plugins into a React component.
+
+## Audience
+
+- React developers looking to add vector tiles into their Leaflet apps.
+
+## Angle
+
+-
 
 ## Ideas
 
