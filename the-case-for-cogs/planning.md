@@ -33,11 +33,11 @@ How to leverage Cloud Optimised GeoTIFFs for displaying high resolution drone im
 
 ...
 
-### 1. Generating VRTs from separate rasters for COG creation
+### 1. Generating VRTs from separate rasters for COG creation (AH)
 
 ...
 
-### 2. Creating COGs using GDAL
+### 2. Creating COGs using GDAL (AH)
 
 ...
 
