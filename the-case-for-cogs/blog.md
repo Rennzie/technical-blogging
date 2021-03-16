@@ -2,7 +2,7 @@
 
 Leverage Cloud Optimised GeoTIFFs (COGs) to display high res drone imagery on a web application. Save on processing and storage at the same time.
 
-Authored by:
+Written by:
 
 - Alasdair Hitchins
 - Sean Rennie
