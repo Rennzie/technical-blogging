@@ -17,18 +17,22 @@ Generate a VRT from multiple images in order to create a stacked COG
 The [Geospatial Data Abstraction Library (GDAL)](https://gdal.org/) is a well established translator library for
 geospatial data formats. One of the features of GDAL enables raster datasets to be created virutally from other raster
 datasets. The VRT file is an XML format that references the raster layers and associated metadata to describe where they
-are geosptially positioned.
+are positioned geographically.
 
 <GDAL version?>
 
 ## Why are using VRTs to generate COGs?
 
-In our use case, we followed the same logic that many public earth observation datasets have followed, which 
+In our use case, we followed the same logic that many public earth observation datasets have followed, which keeps each
+image band of a given wavelength separate. In the case of Sentinel-2 data, you can see the configurations [here](https://sentinel.esa.int/web/sentinel/technical-guides/sentinel-2-msi/msi-instrument).
+
+If you prefer to keep the bands separate, then this step is not necessary to generate COGs.
+
 
 ## Writing a VRT
 
-Writing a VRT is pretty straight forward - you can call the gdal command [`gdalbuildvrt`](https://gdal.org/programs/gdalbuildvrt.html?highlight=gdalbuildvrt). Given three separate datasets: `red.tif`, `green.tif`, `blue.tif` for example, we can
-build a simple VRT to create a separate band RGB image, `rgb.vrt`.
+Writing a VRT is pretty straight forward - you can call the gdal command [`gdalbuildvrt`](https://gdal.org/programs/gdalbuildvrt.html?highlight=gdalbuildvrt).
+Given three separate datasets: `red.tif`, `green.tif`, `blue.tif` for example, we can build a simple VRT to create a separate band RGB image, `rgb.vrt`.
 We want to keep the image bands separate to ensure that they don't get merged into a single band in the dataset.
 
 ```bash
