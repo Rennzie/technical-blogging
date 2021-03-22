@@ -63,3 +63,7 @@ How to leverage Cloud Optimised GeoTIFFs for displaying high resolution drone im
 
 - Do we write this as a multi part blog?
 - Should we focus on implementation or explanation of what COG's are or both (multi part)?
+
+## References and further reading
+
+- <https://github.com/cogeotiff>
