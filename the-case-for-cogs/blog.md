@@ -21,11 +21,11 @@ Support for direct COG generation was introduced in GDAL `3.1`, however in this 
 
 Cloud Optimised GeoTIFFs (COGs) are a specific configuration of the widely used GeoTIFF image format that optimise images for storage on cloud services. They share the same file extension (`.tif`) as a regular TIFF or GeoTIFF file, so what's the difference?
 
-1. Tiling
+#### 1. Tiling
 
 When storing regular TIFFs, the pixel data can be stored as blocks instead of line by line (A nice explanation [can be found here](https://kokoalberti.com/articles/geotiff-compression-optimization-guide/)). This allows 2-dimensional chunks of pixel data to be accessed without reading the entire dataset, which means when you are reading or writing pixel data in a dataset, you are only working with the section of the image that you require. This makes accessing the dataset a lot more performant if you're working on large datasets and don't want to load everything in memory or download everything from a storage bucket. COGs make use of this feature to enable faster I/O operations for cloud resources, which we will see later.
 
-2. Overviews
+#### 2. Overviews
 
 Another nice feature in GeoTIFFs is storing overviews (sometimes referred to as pyramid layers), which are lower resolution versions of the dataset embedded in the file itself. While this slightly increased the overall filesize, it makes visualisation of the dataset more performant when the desired output visual is lower resolution than the original dataset, similar to vieiwing a thumbnail image or preview. You might have seen this when loading an image into your graphic GIS software or viewing a raster on a webmap canvas and increasing or decreasing the zoom level.
 
@@ -59,10 +59,10 @@ This creates a simple VRT for an RGB dataset, and we can now load the resultant 
 
 To create a COG using `GDAL>=3.1`, we will use the `gdalwarp` command. There are a few creation options (`-co`) that need to be specified,for our react-leaflet component to handle the COG correctly. Looking at the [COG driver page](https://gdal.org/drivers/raster/cog.html) from the GDAL documentation, we can see that it's essentially the TIFF driver that is build-in by default with GDAL with some preprocessing already applied. We will cover some basic creation options you might want to start with here:
 
-### 1. TILING_SCHEME
+#### 1. TILING_SCHEME
 Looking at the creation option `TILING_SCHEME`, we can see that there is a built in `GoogleMapsCompatible` option for overviews to be generated at the correct zoom levels that will correspond to incremental zoom levels on a webmap canvas and generate the correct overviews for us. You can read more information about webmap projections, zoom levels and performance on the Google Design blog [here](https://medium.com/google-design/google-maps-cb0326d165f5).
 
-### 2. COMPRESS
+#### 2. COMPRESS
 We also want to compress our file using lossless compession to reduce physical file size, without losing any information. In this case, we use `DEFLATE` with the default predictor of `2`.
 
 We now have all the basic information required to make a COG that is suitablably performant for our leaflet app:
@@ -73,11 +73,11 @@ gdalwarp -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE rgb
 
 If you didn't create a vrt you can replace `rgb.vrt` with your stacked tif already, e.g. `rgb.tif`.
 
-## 4. Handling COG generation as part of a python microservice
+## 3. Handling COG generation as part of a python microservice
 
 Creating COGs on the command line is all well and good, however we wanted this conversion to be performed within our data processing pipeline, specifically after satellite data processing, or UAV orthomosaic generation and quality assurance tests are complete, therefore we need to handle the commands as part of a microservice that could be called whenever we have data we want to translate from a typical GeoTIFF to a COG, and store it. Here we have added some generalised extracts to show how that might look as part of a production microservice.
 
-### 1. Handle the command execution
+#### 1. Handle the command execution
 
 We want to ensure that the command runs, and log any exceptions that might occur in a logbook for debugging later:
 
@@ -106,7 +106,7 @@ def run_command(command: List, timeout: int=600) -> CompletedProcess:
 
 ```
 
-### 2. Build the commands based on inputs and run
+#### 2. Build the commands based on inputs and run
 
 Next we want to create our commands and run them. We don't really want to keep the vrt file so we will create a temp file to store it. You can wrap your command generation to allow more flexible handling of the creation options that are sent to GDAL based on what images you are handling.
 
@@ -148,14 +148,14 @@ run(input_paths, output_cog_path)
 If this completes successfully, we can send our resultant COG back to the cloud storage bucket where it can be requested by the application.
 
 
-## 5. Hosting COGs for consumption
+## 4. Hosting COGs for consumption
 <!-- Section by SR -->
 
 Very simple, stick it in a bucket that allows range requests. We use Google Cloud which is configured by default. There's no need for a web server if you have the ability to make range requests from the client.
 
 Not something we do, but it's possible to generate map tiles or Mapbox vector tiles on the fly from your COGs. Take a look at [rio-tiler]() and [rio-mvt]() if you're interested.
 
-## 6. Consuming COGs with React & leaflet
+## 5. Consuming COGs with React & leaflet
 <!-- Section by SR -->
 
 With the COG hosted ready read go, all we need is a way to display it. While the COG data is organised so making range requests is possible, the client app has the responsibility of making those requests. A client uses the maps view port and resulting zoom level to make these requests and then renders the result. The [GeoTIFF](https://github.com/GeoTIFF) project maintained by [Daniel Dufour](https://github.com/DanielJDufour) has libraries to do both fetching and rendering. The [georaster](https://github.com/GeoTIFF/georaster) library provides an interface for making range requests and the [georaster-layer-for-leaflet](https://github.com/GeoTIFF/georaster-layer-for-leaflet) plugin works along side it to render the COG on a Leaflet map.
@@ -296,7 +296,7 @@ function calcNdvi(nir, red) {
 const scale = chroma.scale(["#B31C08", "#E6E60B", "#1FB308"]).domain([0, 0.7]);
 ```
 
-## 7. Performance
+## 6. Performance
 <!-- Section by SR -->
 
 The story for COGs at Hummingbird is about cost benefit. In our case, cloud compute and storage cost versus higher resolution images in our web platform. User experience is also key.
