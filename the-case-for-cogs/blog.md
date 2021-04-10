@@ -33,25 +33,17 @@ So what makes COGs different from regular GeoTIFFs? Well, they are regular GeoTI
 
 ## 1. Generating VRTs from separate rasters
 
-GDAL enables raster datasets to be created virtually from other raster datasets without copying all of the pixel data. A VRT file is an XML format that references one or more raster datasets and associated their metadata to describe where each of them are positioned geographically. This also allows you to interact with all the datasets as if they were one single multi-band/stacked TIFF.
-<!-- Needs a re-work 👆🏻 - not sure if a VRT "associates" or is "associated with" their... -->
+GDAL enables raster datasets to be created virtually from other raster datasets without copying all of the pixel data. A VRT file is an XML format that references one or more image files and their associated metadata. This also allows you to interact with all of them as if they were one single multi-band/stacked TIFF.
 
 ## Why are we using VRTs to generate COGs?
 
 Common practice in public earth observation datasets is to keep each image band of a given wavelength separate. For Sentinel-2 datasets you can see the configurations [here](https://sentinel.esa.int/web/sentinel/technical-guides/sentinel-2-msi/msi-instrument). We used this practice for storing our UAV orthomosaic data presenting us with two options; 1) COG each band and request the files individually, 2) or stack the bands and create a single COG. Making one request has it's benefits (less network requests for the client), so we chose to go with the latter.
 
-In order to stack the bands into a multi-band image file we will generate a VRT to order the bands correctly, then generate a single COG from the VRT referencing the three separate images.
-<!-- 👆🏻 consider removing and work into `Creating  a VRT` -->
-
-If you prefer to keep the bands separate, then this step is not necessary to generate COGs.
-<!-- 👆🏻 consider removing -->
+The VRT allows us to stack the bands in the correct order.
 
 ## Creating a VRT
 
-Creating a VRT is pretty straight forward using the command [`gdalbuildvrt`](https://gdal.org/programs/gdalbuildvrt.html?highlight=gdalbuildvrt). If you follow the link you can see an example one. They're very lightweight and provide a great interface to handling separate image files in the same context. Imagine we have three separate TIFFs: `red.tif`, `green.tif`, `blue.tif` corresponding to different bands of the same image. We can build a VRT to create a band-separated RGB image that is handled as a single file: `rgb.vrt`. We want to keep the image bands separate to ensure they don't get merged into a single band in the "resulting?" dataset.
-
-Here is the command:
-<!-- 👆🏻 consider removing: redundant -->
+Creating a VRT is straight forward using the command [`gdalbuildvrt`](https://gdal.org/programs/gdalbuildvrt.html?highlight=gdalbuildvrt). If you follow the link you can see an example. They're very lightweight and provide a great interface to handling separate image files in the same context. Imagine we have three separate TIFFs: `red.tif`, `green.tif`, `blue.tif` corresponding to different bands of the same image. We can build a VRT to create a band-separated RGB image that is handled as a single file: `rgb.vrt`. We want to keep the image bands separate to ensure they don't get merged into a single band in the resulting VRT. This would result in a greyscale image - not what we want.
 
 ```bash
 gdalbuildvrt -separate rgb.vrt red.tif green.tif blue.tif
@@ -65,35 +57,32 @@ To create a COG using `GDAL>=3.1`, we will use the `gdalwarp` command. There are
 
 ### 1. TILING_SCHEME
 
-This option is used for overview and tiling generation. We use the built in `GoogleMapsCompatible` one which generates overviews that correspond to zoom levels on a Google Maps like webmap canvas. See more about webmap projections, zoom levels and performance on the Google Design blog [here](https://medium.com/google-design/google-maps-cb0326d165f5).
-
-<!-- Looking at the creation option `TILING_SCHEME`, we can see that there is a built in `GoogleMapsCompatible` option for overviews to be generated at the correct zoom levels that will correspond to incremental zoom levels on a webmap canvas and generate the correct overviews for us. You can read more information about webmap projections, zoom levels and performance on the Google Design blog [here](https://medium.com/google-design/google-maps-cb0326d165f5). -->
+This option is used for overview and tiling generation. We use the built in `GoogleMapsCompatible` one which generates overviews that correspond to zoom levels on a Google Maps standard webmap canvas. See more about webmap projections, zoom levels and performance on the Google Design blog [here](https://medium.com/google-design/google-maps-cb0326d165f5).
 
 ### 2. COMPRESS
 
-We also want to compress our file using lossless compression to reduce physical file size, without losing any information. In this case, we use `DEFLATE` with the default predictor of `2`.
+We also want to compress our file using lossless compression to reduce physical file size, without losing any information. In this case, we use `DEFLATE`. [Wikipedia](https://en.wikipedia.org/wiki/Deflate) gives a deeper dive on this algorithm and other options.
 
-<!-- Suggest some more detail on what these options are 👆🏻 -->
-
-We now have all the basic information required to make a COG that is suitably performant for our Leaflet app:
+With this we've got all the basic information required to make a COG that is suitably performant for our Leaflet app:
 
 ```bash
 gdalwarp -of COG -co TILING_SCHEME=GoogleMapsCompatible -co COMPRESS=DEFLATE rgb.vrt rgb-cog.tif
 ```
 
-If you didn't create a vrt you can replace `rgb.vrt` with your stacked tif - e.g. `rgb.tif`.
+*If you didn't create a vrt you can replace `rgb.vrt` with your stacked tif - e.g. `rgb.tif`.*
 
 ## 3. Handling COG generation as part of a Python microservice
 
-Creating COGs on the command line is all well and good, but we wanted this conversion to be performed within our data processing pipeline. Specifically after satellite data processing or UAV orthomosaic generation and quality assurance tests are complete. We need to handle the commands as part of a microservice that could be called whenever we have data we want to translate from a typical GeoTIFF to a COG - and store it. These generalised extracts show how that might look:
+Creating COGs on the command line is all well and good, but we wanted this conversion to be performed within our data processing pipeline. Specifically after satellite data processing or UAV orthomosaic generation and quality assurance tests are complete. We need to handle the commands as part of a microservice that could be called whenever we have data we want to translate from a typical GeoTIFF to a COG and store it. These generalised code snippets show how we do this:
 
 ### 1. Handle the command execution
 
 We want to ensure that the command runs, logging any exceptions that might occur in a logbook for debugging later:
 
 ```python
-from subprocess import run, CalledProcessError, CompletedProcess
+from subprocess import run, CalledProcessError, **CompletedProcess**
 from shutil import which
+from typing import List
 
 
 def run_command(command: List, timeout: int=600) -> CompletedProcess:
@@ -143,8 +132,7 @@ def run(input_paths: List[Path], output_cog_path: Path) -> None:
 
 ```
 
-We are assuming that the file paths and additional parameters have been sent to the service, however we will use our simple example from above to put it all together:
-<!-- Consider removing everything after the comma. Doesn't add anything unknown -->
+We are assuming that the file paths and additional parameters have been sent to the service:
 
 ```python
 inputs_paths = ["red.tif", "green.tif", "blue.tif"]
@@ -161,16 +149,16 @@ If this completes successfully, we can send our resultant COG back to the cloud 
 ## 4. Hosting COGs for consumption
 <!-- Section by SR -->
 
-Very simple, stick it in a bucket that allows range requests. We use Google Cloud which is configured by default. There's no need for a web server if you have the ability to make range requests from the client.
+Very simple, stick it in a bucket that allows range requests. We use Google Cloud which is configured for this by default. There's no need for a web server if you have the ability to make range requests from the client.
 
 Not something we do, but it's possible to generate map tiles or Mapbox vector tiles on the fly from your COGs. Take a look at [rio-tiler](https://github.com/cogeotiff/rio-tiler) and [rio-tiler-mvt](https://github.com/cogeotiff/rio-tiler-mvt) if you're interested.
 
 ## 5. Consuming COGs with React & Leaflet
 <!-- Section by SR -->
 
-With the COG hosted and ready go, all we need is a way to display it. While the COG data is organised so making range requests is possible, the client app has the responsibility of making those requests. A client uses the maps view port and resulting zoom level to make these requests and then renders the result. The [GeoTIFF](https://github.com/GeoTIFF) project maintained by [Daniel Dufour](https://github.com/DanielJDufour) has libraries to do both fetching and rendering. The [georaster](https://github.com/GeoTIFF/georaster) library provides an interface for making range requests from the client and the [georaster-layer-for-leaflet](https://github.com/GeoTIFF/georaster-layer-for-leaflet) plugin works along side it to render the COG on a Leaflet map canvas.
+With the COG hosted and ready go, all we need is a way to display it. The COG data is organised so making range requests is possible and the client app is responsibility for making them. A client uses the maps view port and resulting zoom level to make these requests and then renders the result. The [GeoTIFF](https://github.com/GeoTIFF) project maintained by [Daniel Dufour](https://github.com/DanielJDufour) has libraries to do both fetching and rendering. The [georaster](https://github.com/GeoTIFF/georaster) library provides an interface for making range requests from the client and the [georaster-layer-for-leaflet](https://github.com/GeoTIFF/georaster-layer-for-leaflet) plugin uses it to render the COG on a Leaflet map canvas.
 
-We use React which means there are a few extra hoops for using Leaflet. Fortunately [react-leaflet](https://react-leaflet.js.org/) has excellent bindings and it's recent major release (v3) comes with a core api for building custom components - easily. The examples below make use of `react-leaflet@v3.x`. If needed, [this Code Sandbox](https://codesandbox.io/s/react-leaflet-georaster-forked-tzl15) uses 2.x or see [this migration guide](https://sean-rennie.medium.com/migrating-react-leaflet-from-v2-to-v3-12d6088af191) - written by Sean.
+We use React which means there are a few extra hoops for using Leaflet. Fortunately [react-leaflet](https://react-leaflet.js.org/) has excellent bindings and it's recent major release (v3) comes with a core api for building custom components. The examples below make use of `react-leaflet@v3.x`. If needed, [this Code Sandbox](https://codesandbox.io/s/react-leaflet-georaster-forked-tzl15) uses 2.x or see [this migration guide](https://sean-rennie.medium.com/migrating-react-leaflet-from-v2-to-v3-12d6088af191) - written by Sean.
 
 ### Writing a custom react-leaflet wrapper
 
@@ -237,17 +225,17 @@ export default function GeoRasterLayer({ paths, ...options }) {
 
 `react-leaflet`'s core api provides high level factory functions for building Leaflet components. It abstracts away logic for adding and removing a layer from the map as well as adding and cleaning event listeners. There is a lot going on there but what's important is that `createPathComponent` allows the rendering of map elements by Leaflet while taking care of any issues React might cause - like unnecessarily adding and removing layers every render.
 
-The only required option for `georaster-layer-for-leaflet` is `georasters` which takes an array of `Georaster` instances. It's this interface that's responsible for making range requests to the COG file. When multiple `Georaster` instances are supplied it means we can render more than one COG, think band stacking but in the client. We did this stacking during the COG create process so won't need to use multiple files here. The `useGeoraster`  hook wraps the pieces required to kick off requests by feeding one `parseGeoraster` call per path into `Promise.all()`. If successful it will return an array of `Georaster` objects. We've also included some status indicators as well for completeness.
+The only required option for `georaster-layer-for-leaflet` is `georasters` which takes an array of `Georaster` instances. It's this interface that's responsible for making range requests to the COG file. When multiple `Georaster` instances are supplied it means we can render more than one COG, think band stacking but in the client. We did this stacking during the COG creation process so won't need to use multiple files here. The `useGeoraster`  hook wraps the pieces required to kick off requests by feeding one `parseGeoraster` call per path into `Promise.all()`. If successful it will return an array of `Georaster` objects. We've also included some status indicators as well for completeness.
 
 #### Putting GeoRasterLayer to use
 
 Our `GeoRasterLayer` takes three important props, `paths`, `pixelValuesToColorFn` and `resolution`, together they fetch and control how the image is rendered. `paths` is an array of urls to the COG(s).
 
-The `resolution` determines how the sampling of pixels is done per tile. This [issue](https://github.com/GeoTIFF/georaster-layer-for-leaflet/issues/51) explains it better but whats worth noting is the higher the resolution the more intensive client CPU requirements are while render. We're still figuring out the best value as it depends on our users. For now we are using `64` which looks like a good middle ground between performance and image quality.
+The `resolution` determines how the sampling of pixels is done per tile. This [issue](https://github.com/GeoTIFF/georaster-layer-for-leaflet/issues/51) explains it better but whats worth noting is the higher the resolution the more intensive client CPU requirements are while rendering. We're still figuring out the best value as it depends on our users. For now we are using `64` which looks like a good middle ground between performance and image quality. This value must be a power of 2.
 
 ```javascript
 const COG_PATH = "PATH_TO_COG";
-const RESOLUTION = 128;
+const RESOLUTION = 64;
 
 function App() {
   return (
@@ -262,7 +250,7 @@ function App() {
 }
 ```
 
-The `pixelValuesToColorFn` gives us control over which colour gets applied to each pixel when the `canvas` is rendered. It's passed a `values` parameter which is an array of band values - which will dependant on our COG. Ours is RGB and values will be an array of three bands: `[ R, G, B ]`. If it's a single band `NIR` image then the value will be an array with one value. When multiple images are used (by using multiple paths) the values argument combines both and the order will depend on that of the urls supplied to `paths`. For example, if `paths={[ NIR_URL, RED_URL ]}` the resulting values argument would be `[ NIR, Red ]`. `pixelValuesToColorFn` must return a valid [CSS colour](https://developer.mozilla.org/en-US/docs/Web/CSS/color) string which gets applied to the canvas.
+The `pixelValuesToColorFn` gives us control over which colour gets applied to each pixel when the `canvas` is rendered. It's passed a `values` parameter which is an array of band values - which will be dependant on our COG. Ours is RGB and values will be an array of three bands: `[ R, G, B ]`. If it's a single band `NIR` image then the value will be an array with one value. When multiple images are used (by using multiple paths) passed to `values` combines both and the order will depend on that of the urls supplied to `paths`. For example, if `paths={[ NIR_URL, RED_URL ]}` the resulting values argument would be `[ NIR, Red ]`. `pixelValuesToColorFn` must return a valid [CSS colour](https://developer.mozilla.org/en-US/docs/Web/CSS/color) string which gets applied to the canvas.
 
 How the function is used really depends on the underlying dataset. This example is for an RGB image:
 
@@ -288,7 +276,7 @@ const hasDataForAllBands = (values) =>
 
 Firstly we check if the pixel should be coloured. Again, what needs to be checked in `hasDataForAllBands` will depend on the dataset.  The general idea is to make pixels with no data values transparent. Our go to library for calculating colours from values is `chroma-js`. For an RGB colour all it needs is the three band values.
 
-A more complex example, like the one below, calculates NDVI on the fly from a stacked multispectral COG. The layers could just have easily come from multiple COGs too.
+A more complex example, like the one below, calculates NDVI on the fly from a stacked multispectral COG. The layers could also have come from multiple COGs.
 
 ```javascript
 import chroma from "chroma-js";
@@ -316,7 +304,7 @@ const scale = chroma.scale(["#B31C08", "#E6E60B", "#1FB308"]).domain([0, 0.7]);
 The story for COGs at Hummingbird is about cost benefit. In our case, cloud compute and storage cost versus higher resolution images in our web platform. User experience is also key.
 
 Diving into storage and processing performance we noticed map tiles become more expensive than COGs as soon as you tile over zl 20. As we've mentioned we need resolution down to zl 24 or 25 for our 5cm GSD products. Some back of the envelope calculations show we'd be saving up to 45% in storage costs by using COGs. There's another win there too, when its all said and done, you only need one remaining file - the COG. No need to store the tile set and the original GeoTIFF.
-<!-- Something about benefit of VRTs? -->
- When it comes to processing, COGs are often up to 10x faster to generate than tiles. In our books this is a massive win.
+
+When it comes to processing, COGs are often up to 10x faster to generate than tiles. In our books this is a massive win.
 
 Measuring on platform performance is a bit trickier and subjective. What is considered a "fast" load to a user navigating a lettuce field. Is that the most important metric or is seeing greater detail at lower zoom levels important? We are actively evaluating this question, but for the time being are happy with the perceived performance of COGs when compared to map tiles. If we get a more concrete answer we'll be sure to write up a new post with our learnings.
