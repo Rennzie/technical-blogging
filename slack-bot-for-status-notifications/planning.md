@@ -35,7 +35,23 @@
 - Hacking a client side webhook with `'Content-type': 'application/x-www-form-urlencoded'` in a POST request
   - It makes it a simple request which disabled the preflight CORs check.
 
+## Sections
+
+- TL;DR
+- What are we solving and why bother
+- Webhooks for messaging a Slack channel and how not to do it from the client
+- Scaffolding a Typescript, Bolt & Express app
+- Express for Bolt
+  - a. Leveraging middleware to overcome the dreaded CORS
+  - b. Slacks web-api SDK
+- Deploying the bot to Cloud Functions (GCP)
+- Resources
+
 ## Notes
 
 - It's likely that notifications from apps to slack should be infrequent enough that the channel is not overloaded.
   - Masses of messages would be better suited for tools like Sentry, Google Analytics or other logging/analytics tools
+  - Uses cases could be in app error/bug reporting (one way comms), status notifications, internal tools
+- Considerations  
+  - Authentications of client side request
+  - Better error handling
