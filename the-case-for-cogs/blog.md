@@ -57,13 +57,13 @@ This creates a simple VRT for an RGB dataset, and we can now load the resultant 
 
 ## 2. Creating COGs using GDAL
 
-To create a COG using `GDAL>=3.1`, we will use the `gdalwarp` command. There are a few creation options (`-co`) that need to be specified,for our react-leaflet component to handle the COG correctly. Looking at the [COG driver page](https://gdal.org/drivers/raster/cog.html) from the GDAL documentation, we can see that it's essentially the TIFF driver that is build-in by default with GDAL with some preprocessing already applied. We will cover some basic creation options you might want to start with here:
+To create a COG using `GDAL>=3.1`, we will use the `gdalwarp` command. There are a few creation options (`-co`) that need to be specified for our react-leaflet component to handle the COG correctly. Looking at the [COG driver page](https://gdal.org/drivers/raster/cog.html) from the GDAL documentation, we can see that it's essentially the TIFF driver that is built-in by default with GDAL with some preprocessing already applied. We will cover some basic creation options you might want to start with here:
 
 #### 1. TILING_SCHEME
 Looking at the creation option `TILING_SCHEME`, we can see that there is a built in `GoogleMapsCompatible` option for overviews to be generated at the correct zoom levels that will correspond to incremental zoom levels on a webmap canvas and generate the correct overviews for us. You can read more information about webmap projections, zoom levels and performance on the Google Design blog [here](https://medium.com/google-design/google-maps-cb0326d165f5).
 
 #### 2. COMPRESS
-We also want to compress our file using lossless compession to reduce physical file size, without losing any information. In this case, we use `DEFLATE` with the default predictor of `2`.
+We also want to compress our file using lossless compession to reduce physical file size, without losing any information. In this case, we use `DEFLATE` with the horizontal differencing predictor, `2`.
 
 We now have all the basic information required to make a COG that is suitablably performant for our leaflet app:
 
@@ -75,7 +75,7 @@ If you didn't create a vrt you can replace `rgb.vrt` with your stacked tif alrea
 
 ## 3. Handling COG generation as part of a python microservice
 
-Creating COGs on the command line is all well and good, however we wanted this conversion to be performed within our data processing pipeline, specifically after satellite data processing, or UAV orthomosaic generation and quality assurance tests are complete, therefore we need to handle the commands as part of a microservice that could be called whenever we have data we want to translate from a typical GeoTIFF to a COG, and store it. Here we have added some generalised extracts to show how that might look as part of a production microservice.
+Creating COGs on the command line is all well and good, however we wanted this conversion to be performed within our data processing pipeline, specifically after satellite data processing, or UAV orthomosaic generation and quality assurance tests are complete. We need to handle the commands as part of a microservice that could be called whenever we have data we want to translate from a typical GeoTIFF to a COG, and store it. Here we have added some generalised extracts to show how that might look as part of a production microservice.
 
 #### 1. Handle the command execution
 
@@ -117,7 +117,8 @@ import tempfile
 
 
 def run(input_paths: List[Path], output_cog_path: Path) -> None:
-
+    """Create a COG from a collection of input rasters for cloud storage.
+    """
     temp_vrt_path = (Path(tempfile.gettempdir()) / next(tempfile._get_candidate_names())).with_suffix(".vrt")
 
     vrt_command = ["gdalbuildvrt", "-separate", temp_vrt_path, *input_paths]
